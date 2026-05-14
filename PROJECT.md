@@ -437,7 +437,7 @@ NOTA OPERATIVA DA VERIFICARE: "Il Makefile (o lo script build.sh) deve essere po
 
 ## 10. Suddivisione dei Compiti
 
-### Membro 1 — Controller e I/O Multiplexing
+### Membro 1 — Controller e I/O Multiplexing - Tommaso
 
 **File di competenza:** `src/controller/`, `src/ipc/event_loop.c`, `src/utils/cleanup.c`
 
@@ -453,7 +453,7 @@ NOTA OPERATIVA DA VERIFICARE: "Il Makefile (o lo script build.sh) deve essere po
 
 ---
 
-### Membro 2 — Infrastruttura IPC e Routing
+### Membro 2 — Infrastruttura IPC e Routing - Poli
 
 **File di competenza:** `src/ipc/` (escluso `event_loop.c`), `src/core/`
 
@@ -471,7 +471,7 @@ NOTA OPERATIVA DA VERIFICARE: "Il Makefile (o lo script build.sh) deve essere po
 
 ---
 
-### Membro 3 — Dispositivi, Concorrenza e Testing
+### Membro 3 — Dispositivi, Concorrenza e Testing - Francesco
 
 **File di competenza:** `src/devices/`, `src/utils/random_delay.c`, `scripts/`, `tests/`
 
