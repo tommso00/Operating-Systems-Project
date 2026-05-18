@@ -30,7 +30,7 @@
 #define MIN_RANDOM_DELAY_S 1
 #define MAX_RANDOM_DELAY_S 3
 
-typedef int32 device_id ;
+typedef int32_t device_id ;
 
 typedef enum {
     STATE_UNKNOWN = 0,
