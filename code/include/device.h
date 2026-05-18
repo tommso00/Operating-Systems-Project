@@ -11,30 +11,30 @@ typedef enum {
     DEVICE_BULB,
     DEVICE_WINDOW,
     DEVICE_FRIDGE
-} device_type_t;
+} device_type ;
 
 typedef struct {
-    device_id_t id;
-    device_type_t type;
+    device_id id;
+    device_type type;
     pid_t pid;
-    device_id_t logical_parent_id;
-    state_t state;
+    device_id logical_parent_id;
+    state state;
     bool manual_override;
     char fifo_path[PATH_MAX];
     char name[NAME_MAX];
-} device_info_t;
+} device_info ;
 
-typedef struct device device_t;
+typedef struct device device ;
 
-typedef int (*device_init_fn)(device_t *dev);
-typedef int (*device_handle_fn)(device_t *dev, const message_t *req, message_t *resp);
-typedef int (*device_destroy_fn)(device_t *dev);
+typedef int (*device_init_fn)(device *dev);
+typedef int (*device_handle_fn)(device *dev, const message *req, message *resp);
+typedef int (*device_destroy_fn)(device *dev);
 
 struct device {
-    device_info_t info;
+    device_info info;
 
     int child_count;
-    device_id_t child_ids[32];
+    device_id child_ids[32];
 
     char registry_snapshot[PAYLOAD_MAX];
 
@@ -45,12 +45,12 @@ struct device {
     void *impl;
 };
 
-const char *device_type_str(device_type_t type);
-bool device_is_control(device_type_t type);
-bool device_is_interaction(device_type_t type);
+const char *device_type_str(device_type type);
+bool device_is_control(device_type type);
+bool device_is_interaction(device_type type);
 
-int device_build_info_payload(const device_t *dev, char *buffer, size_t buffer_len);
-int device_apply_switch(device_t *dev, const char *label, const char *position);
-int device_set_parameter(device_t *dev, const char *key, const char *value);
+int device_build_info_payload(const device *dev, char *buffer, size_t buffer_len);
+int device_apply_switch(device *dev, const char *label, const char *position);
+int device_set_parameter(device *dev, const char *key, const char *value);
 
 #endif

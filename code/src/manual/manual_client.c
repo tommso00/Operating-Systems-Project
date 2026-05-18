@@ -8,7 +8,7 @@
 #include "error_codes.h"
 #include "ipc.h"
 
-static int parse_device_id(const char *s, device_id_t *out_id) {
+static int parse_device_id(const char *s, device_id *out_id) {
     char *end = NULL;
     long value;
 
@@ -26,7 +26,7 @@ static int parse_device_id(const char *s, device_id_t *out_id) {
     return OK;
 }
 
-static int lookup_device_fifo(device_id_t id, char *fifo_path, size_t fifo_path_len) {
+static int lookup_device_fifo(device_id id, char *fifo_path, size fifo_path_len) {
     FILE *fp;
     int file_id;
     int pid_value;
@@ -53,11 +53,11 @@ static int lookup_device_fifo(device_id_t id, char *fifo_path, size_t fifo_path_
     return ERR_DEVICE_NOT_FOUND;
 }
 
-static int build_manual_request(device_id_t id,
+static int build_manual_request(device_id id,
                                 const char *command,
                                 const char *param1,
                                 const char *param2,
-                                message_t *msg) {
+                                message *msg) {
     if (msg == NULL || command == NULL) {
         return ERR_INVALID_PARAMETERS;
     }
@@ -100,9 +100,9 @@ static int build_manual_request(device_id_t id,
 }
 
 int main(int argc, char **argv) {
-    device_id_t id;
-    message_t request;
-    message_t response;
+    device_id id;
+    message request;
+    message response;
     char request_fifo[PATH_MAX];
     char reply_fifo[PATH_MAX];
     int rc;

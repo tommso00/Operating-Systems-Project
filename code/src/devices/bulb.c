@@ -11,14 +11,14 @@
 #include "error_codes.h"
 #include "ipc.h"
 
-static volatile sig_atomic_t keep_running = 1;
+static volatile sig_atomic keep_running = 1;
 
 typedef struct {
-    device_id_t id;
-    state_t state;
+    device_id id;
+    state state;
     unsigned long usage_time;
     char fifo_path[PATH_MAX];
-} bulb_ctx_t;
+} bulb_ctx ;
 
 static void on_sigterm(int sig) {
     (void)sig;
@@ -33,7 +33,7 @@ static void simulate_delay(void) {
     sleep((unsigned int)delay);
 }
 
-static const char *state_str(state_t state) {
+static const char *state_str(state state) {
     switch (state) {
         case STATE_ON: return "on";
         case STATE_OFF: return "off";
@@ -41,7 +41,7 @@ static const char *state_str(state_t state) {
     }
 }
 
-static int build_info_payload(const bulb_ctx_t *ctx, char *buf, size_t len) {
+static int build_info_payload(const bulb_ctx *ctx, char *buf, size len) {
     if (ctx == NULL || buf == NULL) {
         return ERR_INVALID_PARAMETERS;
     }
@@ -52,7 +52,7 @@ static int build_info_payload(const bulb_ctx_t *ctx, char *buf, size_t len) {
     return OK;
 }
 
-static int handle_request(bulb_ctx_t *ctx, const message_t *req, message_t *resp) {
+static int handle_request(bulb_ctx *ctx, const message *req, message *resp) {
     if (ctx == NULL || req == NULL || resp == NULL) {
         return ERR_INVALID_PARAMETERS;
     }
@@ -97,10 +97,10 @@ static int handle_request(bulb_ctx_t *ctx, const message_t *req, message_t *resp
     }
 }
 
-int bulb_device_main(device_id_t id) {
-    bulb_ctx_t ctx;
-    message_t req;
-    message_t resp;
+int bulb_device_main(device_id id) {
+    bulb_ctx ctx;
+    message req;
+    message resp;
     int fd;
     int dummy_fd;
 

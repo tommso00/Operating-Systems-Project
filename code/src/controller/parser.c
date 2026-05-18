@@ -6,7 +6,7 @@
 #include "parser.h"
 
 static void trim_newline(char *s) {
-    size_t n;
+    size n;
     if (s == NULL) return;
     n = strlen(s);
     if (n > 0 && s[n - 1] == '\n') {
@@ -14,7 +14,7 @@ static void trim_newline(char *s) {
     }
 }
 
-int parse_command_line(const char *line, parsed_command_t *out) {
+int parse_command_line(const char *line, parsed_command *out) {
     char buf[LINE_MAX];
     char *tok;
     char *saveptr = NULL;
