@@ -6,7 +6,7 @@
 #include "parser.h"
 
 static void trim_newline(char *s) {
-    size n;
+    size_t n;
     if (s == NULL) return;
     n = strlen(s);
     if (n > 0 && s[n - 1] == '\n') {

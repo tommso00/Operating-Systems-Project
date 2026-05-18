@@ -11,7 +11,7 @@
 #include "error_codes.h"
 #include "ipc.h"
 
-static volatile sig_atomic keep_running = 1;
+static volatile sig_atomic_t keep_running = 1;
 
 typedef struct {
     device_id id;
@@ -41,7 +41,7 @@ static const char *state_str(state state) {
     }
 }
 
-static int build_info_payload(const bulb_ctx *ctx, char *buf, size len) {
+static int build_info_payload(const bulb_ctx *ctx, char *buf, size_t len) {
     if (ctx == NULL || buf == NULL) {
         return ERR_INVALID_PARAMETERS;
     }
