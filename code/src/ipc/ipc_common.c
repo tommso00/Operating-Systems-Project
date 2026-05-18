@@ -7,7 +7,7 @@
 
 #include "ipc.h"
 
-int make_device_fifo_path(device_id_t id, char *buffer, size_t buffer_len) {
+int make_device_fifo_path(device_id id, char *buffer, size_t buffer_len) {
     if (buffer == NULL || buffer_len == 0) {
         return ERR_INVALID_PARAMETERS;
     }
@@ -25,7 +25,7 @@ int make_reply_fifo_path(pid_t pid, int request_id, char *buffer, size_t buffer_
     return OK;
 }
 
-int send_message(const char *fifo_path, const message_t *msg) {
+int send_message(const char *fifo_path, const message *msg) {
     int fd;
     ssize_t written;
 
@@ -48,7 +48,7 @@ int send_message(const char *fifo_path, const message_t *msg) {
     return OK;
 }
 
-int recv_message(int fd, message_t *msg) {
+int recv_message(int fd, message *msg) {
     ssize_t n;
 
     if (fd < 0 || msg == NULL) {
@@ -69,8 +69,8 @@ int recv_message(int fd, message_t *msg) {
 
 int request_reply(const char *request_fifo,
                        const char *reply_fifo,
-                       const message_t *request,
-                       message_t *response) {
+                       const message *request,
+                       message *response) {
     int fd;
     int rc;
 

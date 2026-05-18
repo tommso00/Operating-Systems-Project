@@ -14,7 +14,7 @@ static void trim_newline(char *s) {
     }
 }
 
-int parse_command_line(const char *line, parsed_command_t *out) {
+int parse_command_line(const char *line, parsed_command *out) {
     char buf[LINE_MAX];
     char *tok;
     char *saveptr = NULL;

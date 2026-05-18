@@ -9,7 +9,7 @@ typedef enum {
     MSG_REQUEST,
     MSG_RESPONSE,
     MSG_EVENT
-} msg_kind_t;
+} msg_kind ;
 
 typedef enum {
     CMD_NONE = 0,
@@ -24,29 +24,29 @@ typedef enum {
     CMD_TERMINATE,
     CMD_NOTIFY_OVERRIDE,
     CMD_NOTIFY_CRASH
-} cmd_t;
+} cmd ;
 
 typedef struct {
-    msg_kind_t kind;
-    cmd_t cmd;
-    device_id_t src_id;
-    device_id_t dst_id;
+    msg_kind kind;
+    cmd cmd;
+    device_id src_id;
+    device_id dst_id;
     pid_t src_pid;
     int request_id;
     int status;
     char arg1[LABEL_MAX];
     char arg2[VALUE_MAX];
     char payload[PAYLOAD_MAX];
-} message_t;
+} message ;
 
-int make_device_fifo_path(device_id_t id, char *buffer, size_t buffer_len);
+int make_device_fifo_path(device_id id, char *buffer, size_t buffer_len);
 int make_reply_fifo_path(pid_t pid, int request_id, char *buffer, size_t buffer_len);
 
-int send_message(const char *fifo_path, const message_t *msg);
-int recv_message(int fd, message_t *msg);
+int send_message(const char *fifo_path, const message *msg);
+int recv_message(int fd, message *msg);
 int request_reply(const char *request_fifo,
                        const char *reply_fifo,
-                       const message_t *request,
-                       message_t *response);
+                       const message *request,
+                       message *response);
 
 #endif

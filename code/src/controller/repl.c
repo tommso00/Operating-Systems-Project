@@ -6,7 +6,7 @@
 #include "error_codes.h"
 #include "parser.h"
 
-static device_type_t parse_device_type(const char *s) {
+static device_type parse_device_type(const char *s) {
     if (s == NULL) return -1;
     if (strcmp(s, "bulb") == 0) return DEVICE_BULB;
     if (strcmp(s, "hub") == 0) return DEVICE_HUB;
@@ -16,7 +16,7 @@ static device_type_t parse_device_type(const char *s) {
     return -1;
 }
 
-static device_id_t parse_id(const char *s) {
+static device_id parse_id(const char *s) {
     int id = -1;
     if (s != NULL) {
         sscanf(s, "%d", &id);
@@ -24,9 +24,9 @@ static device_id_t parse_id(const char *s) {
     return id;
 }
 
-int controller_run(controller_t *controller) {
+int controller_run(controller *controller) {
     char line[LINE_MAX];
-    parsed_command_t cmd;
+    parsed_command cmd;
     int rc;
 
     if (controller == NULL) {
@@ -56,7 +56,7 @@ int controller_run(controller_t *controller) {
                 break;
 
             case PARSER_CMD_ADD: {
-                device_type_t type = parse_device_type(cmd.argv[0]);
+                device_type type = parse_device_type(cmd.argv[0]);
                 if (type < 0) {
                     rc = ERR_INVALID_PARAMETERS;
                 } else {
@@ -104,7 +104,7 @@ int controller_run(controller_t *controller) {
                 break;
 
             default:
-                fprintf(stderr, "Invalid command.\n");
+                fprintf(stderr, "Command not valid.\n");
                 rc = ERR_INVALID_COMMAND;
                 break;
         }

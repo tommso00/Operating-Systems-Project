@@ -30,7 +30,7 @@
 #define MIN_RANDOM_DELAY_S 1
 #define MAX_RANDOM_DELAY_S 3
 
-typedef int32_t device_id_t;
+typedef int32_t device_id ;
 
 typedef enum {
     STATE_UNKNOWN = 0,
@@ -39,11 +39,11 @@ typedef enum {
     STATE_OPEN,
     STATE_CLOSED,
     STATE_MANUAL_OVERRIDE
-} state_t;
+} state ;
 
 typedef enum {
     MODE_READ = 0,
     MODE_WRITE
-} mode_t;
+} mode ;
 
 #endif

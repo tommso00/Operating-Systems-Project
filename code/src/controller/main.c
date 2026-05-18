@@ -5,14 +5,14 @@
 #include "controller.h"
 #include "error_codes.h"
 
-int bulb_device_main(device_id_t id);
+int bulb_device_main(device_id id);
 
 int main(int argc, char **argv) {
-    controller_t controller;
+    controller controller;
     int rc;
 
     if (argc == 3 && strcmp(argv[1], "--device-bulb") == 0) {
-        device_id_t id = (device_id_t)atoi(argv[2]);
+        device_id id = (device_id)atoi(argv[2]);
         return bulb_device_main(id);
     }
 
