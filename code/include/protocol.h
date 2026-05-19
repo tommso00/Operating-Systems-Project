@@ -39,7 +39,7 @@
 #define CMD_STATUS          "STATUS"
 
 // TIMEOUT CONFIGURATION: Must be > 3 to account or the mandatory 1-3s delay of devices
-#define TIMEOUT 7
+#define TIMEOUT_DEVICE 7
 
 
 #endif
