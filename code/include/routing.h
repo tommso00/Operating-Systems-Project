@@ -1,5 +1,5 @@
- #ifndef __ROUTING_H__
- #define __ROUTING_H__
+ #ifndef ROUTING_H
+ #define ROUTING_H
 
  #include <stdbool.h>
  #include "protocol.h"
@@ -17,11 +17,11 @@
  } device_type;
 
  //routing nome: represents a single device inside the hierarchy routing table.
- typedef struct {
-    int id
+ typedef struct{
+    int id;
     int parent_id;      //the id of the logical parent (e.g., 0 for Controller)
     device_type type;   // Used to distinguish beetween Control and Interaction devices
- } routing_node;
+ }routing_node;
 
  //routing and hierarchy function prototypes
 
