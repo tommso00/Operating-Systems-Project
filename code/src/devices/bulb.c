@@ -10,6 +10,12 @@
 #include "common.h"
 #include "error_codes.h"
 #include "ipc.h"
+<<<<<<< Updated upstream
+=======
+#include "routing.h"
+#include "protocol.h"
+#include "utils.h"
+>>>>>>> Stashed changes
 
 static volatile sig_atomic_t keep_running = 1;
 
@@ -23,14 +29,6 @@ typedef struct {
 static void on_sigterm(int sig) {
     (void)sig;
     keep_running = 0;
-}
-
-static void simulate_delay(void) {
-    int delay = MIN_RANDOM_DELAY_S;
-    if (MAX_RANDOM_DELAY_S > MIN_RANDOM_DELAY_S) {
-        delay += rand() % (MAX_RANDOM_DELAY_S - MIN_RANDOM_DELAY_S + 1);
-    }
-    sleep((unsigned int)delay);
 }
 
 static const char *state_str(state state) {
@@ -66,7 +64,7 @@ static int handle_request(bulb_ctx *ctx, const message *req, message *resp) {
     resp->request_id = req->request_id;
     resp->status = OK;
 
-    simulate_delay();
+    simulate_random_delay();
 
     switch (req->cmd) {
         case CMD_INFO:
