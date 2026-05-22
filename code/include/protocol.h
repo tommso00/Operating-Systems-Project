@@ -1,7 +1,6 @@
 #ifndef PROTOCOL_H
 #define PROTOCOL_H
 
-#include "error_codes.h"
 
 
 //SYSTEM PATHS AND PREFIXES
@@ -31,6 +30,10 @@
 
 // TIMEOUT CONFIGURATION: Must be > 3 to account or the mandatory 1-3s delay of devices
 #define TIMEOUT_DEVICE 7
+
+// MESSAGE KINDS for request-reply pattern
+#define MSG_REQUEST         1
+#define MSG_RESPONSE        2
 
 
 #endif
