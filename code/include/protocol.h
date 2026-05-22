@@ -1,17 +1,8 @@
 #ifndef PROTOCOL_H
 #define PROTOCOL_H
 
+#include "error_codes.h"
 
-//ERROR CODES: Must match EXACTLY with the numeric values used in Bash.
-// naming convention: UPPER_SNAKE_CASE
-
-#define OK                      0
-#define DEVICE_NOT_FOUND        1
-#define INVALID_COMMAND         2
-#define LINK_FAILED             3
-#define DEVICE_TYPE_MISMATCH    4
-#define IPC_ERROR               5
-#define CYCLE_DETECTED          6
 
 //SYSTEM PATHS AND PREFIXES
 
