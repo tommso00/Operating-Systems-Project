@@ -70,6 +70,49 @@ static int spawn_bulb_process(device_id id, pid_t *pid_out) {
     return OK;
 }
 
+
+static int spawn_window_process(device_id id, pid_t *pid_out) {
+    pid_t pid ;
+    char id_arg[32] ;
+
+    snprintf(id_arg, sizeof(id_arg),"%d" ,id) ;
+
+    pid = fork();
+    if (pid<0)
+    {
+        return ERR_SYSTEM;}
+
+    if(pid == 0){
+        execl("./bin/domotics_controller","./bin/domotics_controller","--device-window",id_arg,(char *)NULL);
+        _exit(ERR_SYSTEM);
+    }
+
+    *pid_out=pid;
+    return OK ;
+}
+
+static int spawn_fridge_process(device_id id, pid_t *pid_out) {
+    pid_t pid;
+    char id_arg[32];
+
+    snprintf(id_arg,sizeof(id_arg), "%d", id);
+
+    pid = fork();
+    if (pid < 0) {
+        return ERR_SYSTEM;
+    }
+
+    if(pid == 0){
+        // child process - exec fridge
+        execl("./bin/domotics_controller","./bin/domotics_controller","--device-fridge",id_arg,(char *)NULL);
+        _exit(ERR_SYSTEM);
+    }
+    *pid_out= pid;
+
+
+    return OK;
+}
+
 device *controller_find_device(controller *controller, device_id id) {
     int i;
 
@@ -128,22 +171,31 @@ int controller_add_device(controller *controller, device_type type) {
         return ERR_NOT_ALLOWED;
     }
 
-    if (type != DEVICE_BULB) {
-        return ERR_DEVICE_TYPE_MISMATCH;
-        printf("Device not recognized");
-    }
-
-    dev = &controller->devices[controller->device_count];
+    dev=&controller->devices[controller->device_count];
     memset(dev, 0, sizeof(*dev));
 
-    rc = device_common_init(dev, controller->next_device_id++, type);
-    if(rc != OK) {
+    rc= device_common_init(dev,controller->next_device_id++,type);
+    if(rc!=OK)
+    {
         return rc;
     }
 
     dev->info.logical_parent_id = CONTROLLER_ID;
 
-    rc = spawn_bulb_process(dev->info.id, &pid);
+    switch (type) {
+        case DEVICE_BULB:
+            rc=spawn_bulb_process(dev->info.id, &pid);
+            break;
+        case DEVICE_WINDOW:
+            rc= spawn_window_process(dev->info.id , &pid) ;
+            break;
+        case DEVICE_FRIDGE:
+            rc= spawn_fridge_process(dev->info.id , &pid);
+            break;
+        default:
+            return ERR_DEVICE_TYPE_MISMATCH;
+    }
+
     if (rc != OK) {
         return rc;
     }
@@ -172,14 +224,16 @@ int controller_delete_device(controller *controller, device_id id)
     }
 
     dev = controller_find_device(controller, id);
-    int tempID = dev->info.id;
-    const char *tempDeviceType = device_type_str(dev->info.type);
-    int tempPid = (int)dev->info.pid;
+    
 
     if (dev == NULL) {
         return ERR_DEVICE_NOT_FOUND;
     }
 
+    int tempID = dev->info.id;
+    const char *tempDeviceType = device_type_str(dev->info.type);
+    int tempPid = (int)dev->info.pid;
+    
     if(kill(dev->info.pid, SIGTERM) != 0) {
         return ERR_SYSTEM;
     }
