@@ -91,21 +91,35 @@ int device_common_setup_fifo(device *dev)
 int device_common_open_fifo(device *dev, int *fd_out, int *dummy_fd_out) {
     int fd, dummy_fd;
 
-    if (dev == NULL || fd_out == NULL) {
+    if (dev == NULL||fd_out == NULL) {
         return ERR_INVALID_PARAMETERS;
     }
-
-    fd = open(dev->info.fifo_path, O_RDONLY);
+    fd = open(dev->info.fifo_path, O_RDONLY | O_NONBLOCK);
     if(fd < 0) {
+        perror("open O_RDONLY | O_NONBLOCK failed");
+        unlink(dev->info.fifo_path);
+        return ERR_SYSTEM;}
+
+    int flags = fcntl(fd, F_GETFL);
+    if (flags <0) {
+        perror("fcntl F_GETFL failed");
+        close(fd);
         unlink(dev->info.fifo_path);
         return ERR_SYSTEM;
     }
+    if (fcntl(fd, F_SETFL, flags & ~O_NONBLOCK) <0) {
+        perror("fcntl F_SETFL failed");
+        close(fd) ;
+        unlink(dev->info.fifo_path) ;
+        return ERR_SYSTEM;
+    }
+
 
     dummy_fd = open(dev->info.fifo_path, O_WRONLY | O_NONBLOCK);
 
-    *fd_out = fd;
-    if(dummy_fd_out != NULL) {
-        *dummy_fd_out = dummy_fd;
+    *fd_out =fd;
+    if(dummy_fd_out !=NULL) {
+        *dummy_fd_out =dummy_fd;
     }
 
     return OK;

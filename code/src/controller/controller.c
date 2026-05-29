@@ -2,6 +2,7 @@
 
 #include <errno.h>
 #include <signal.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -59,7 +60,7 @@ static int spawn_bulb_process(device_id id, pid_t *pid_out) {
     if(pid == 0) {
         // child process - exec bulb
         execl("./bin/domotics_controller",
-              "./bin/domotics_controller",
+              "controller",
               "--device-bulb",
               id_arg,
               (char *)NULL);
@@ -83,7 +84,7 @@ static int spawn_window_process(device_id id, pid_t *pid_out) {
         return ERR_SYSTEM;}
 
     if(pid == 0){
-        execl("./bin/domotics_controller","./bin/domotics_controller","--device-window",id_arg,(char *)NULL);
+        execl("./bin/domotics_controller","controller","--device-window",id_arg,(char *)NULL);
         _exit(ERR_SYSTEM);
     }
 
@@ -104,7 +105,7 @@ static int spawn_fridge_process(device_id id, pid_t *pid_out) {
 
     if(pid == 0){
         // child process - exec fridge
-        execl("./bin/domotics_controller","./bin/domotics_controller","--device-fridge",id_arg,(char *)NULL);
+        execl("./bin/domotics_controller","controller","--device-fridge",id_arg,(char *)NULL);
         _exit(ERR_SYSTEM);
     }
     *pid_out= pid;
@@ -180,6 +181,12 @@ int controller_add_device(controller *controller, device_type type) {
         return rc;
     }
 
+
+
+    rc = device_common_setup_fifo(dev);
+    if (rc != OK) {
+        return rc;
+    }
     dev->info.logical_parent_id = CONTROLLER_ID;
 
     switch (type) {
@@ -202,8 +209,25 @@ int controller_add_device(controller *controller, device_type type) {
 
     dev->info.pid = pid;
     controller->device_count++;
+        // Wait for the device process to open its FIFO reader before returning.
+    int retries =TIMEOUT_DEVICE;
+    while (retries-- >0) {
+        int ready_fd = open(dev->info.fifo_path, O_WRONLY | O_NONBLOCK);
+        if (ready_fd >=0) {
+            close(ready_fd);
+            break;
+        }
+        if (errno !=ENXIO) {
+            return ERR_SYSTEM;
+        }
+        sleep(1);
+    }
 
-    rc = write_registry(controller);
+    if (retries < 0) {
+        return ERR_TIMEOUT;
+    }
+
+    rc =write_registry(controller);
     if(rc != OK) {
         return rc;
     }
@@ -233,7 +257,7 @@ int controller_delete_device(controller *controller, device_id id)
     int tempID = dev->info.id;
     const char *tempDeviceType = device_type_str(dev->info.type);
     int tempPid = (int)dev->info.pid;
-    
+
     if(kill(dev->info.pid, SIGTERM) != 0) {
         return ERR_SYSTEM;
     }
@@ -294,8 +318,11 @@ int controller_info_device(controller *controller, device_id id) {
     snprintf(req.command, sizeof(req.command), "%s", CMD_INFO);    
     req.src_id = CONTROLLER_ID;
     req.dst_id = id;
+    req.target_id = id;
     req.src_pid = getpid();
     req.request_id = (int)getpid();
+    snprintf(req.sender_id,sizeof(req.sender_id),"%d",CONTROLLER_ID);
+    snprintf( req.payload,sizeof(req.payload), "ALL");
 
     rc = make_reply_fifo_path(getpid(), req.request_id, 
                               reply_fifo, sizeof(reply_fifo));
@@ -338,10 +365,15 @@ int controller_switch_device(controller *controller, device_id id, const char *l
     snprintf(req.command, sizeof(req.command), "%s", CMD_SWITCH);
     req.src_id = CONTROLLER_ID;
     req.dst_id = id;
+    req.target_id = id;
     req.src_pid = getpid();
     req.request_id = (int)getpid();
     snprintf(req.arg1, sizeof(req.arg1), "%s", label);
     snprintf(req.arg2, sizeof(req.arg2), "%s", pos);
+
+    snprintf( req.sender_id,sizeof(req.sender_id), "%d", CONTROLLER_ID); 
+     snprintf( req.payload,sizeof(req.payload),"%s,%s",label, pos);
+
 
     rc = make_reply_fifo_path(getpid(), req.request_id, reply_fifo, sizeof(reply_fifo));
     if(rc != OK) {

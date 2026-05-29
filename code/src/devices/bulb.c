@@ -66,6 +66,8 @@ static int bulb_handle_message(device *dev, const domo_message *req, domo_messag
     memset(resp, 0, sizeof(*resp));
     resp->kind = MSG_RESPONSE;
     snprintf(resp->command, sizeof(resp->command), "%s", req->command);
+    snprintf(resp->sender_id, sizeof(resp->sender_id), "%d", bulb->base.info.id);
+
     resp->src_id = bulb->base.info.id;
     resp->dst_id = req->src_id;
     resp->src_pid = getpid();
@@ -148,20 +150,22 @@ int bulb_device_main(device_id id){
     memset(&bulb,0,sizeof(bulb));
     rc = device_common_init(&bulb.base, id, DEVICE_BULB);
 
-        if (rc != OK) {
-            return rc;
-        }
-        
-        bulb.base.handle_message= bulb_handle_message;
-        bulb.base.destroy=bulb_destroy;
-        rc= bulb_init(&bulb.base) ;
-        
-        if (rc != OK) {
-            return rc;
-        }rc=device_common_setup_fifo(&bulb.base);
-        if (rc!=OK) {
-        return rc ; 
+    if (rc != OK) {
+        return rc;
     }
+        
+    bulb.base.handle_message= bulb_handle_message;
+    bulb.base.destroy=bulb_destroy;
+    rc= bulb_init(&bulb.base) ;
+        
+    if (rc != OK) {
+        return rc;
+    }
+    rc = device_common_setup_fifo(&bulb.base);
+    if (rc != OK) {
+        return rc;
+    }
+    
     rc = device_common_open_fifo(&bulb.base, &fd, &dummy_fd);
     if (rc != OK) {
         return rc;
