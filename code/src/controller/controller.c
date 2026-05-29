@@ -370,6 +370,7 @@ int controller_add_device(controller *controller, device_type type) {
         case DEVICE_FRIDGE:
             rc= spawn_fridge_process(dev->info.id , &pid);
             break;
+            //QUA BISOGNA IMPLEMENTARE HUB
         default:
             return ERR_DEVICE_TYPE_MISMATCH;
     }
