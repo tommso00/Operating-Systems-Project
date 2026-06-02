@@ -79,6 +79,7 @@ static int fridge_handle_message(device *dev, const domo_message *req, domo_mess
     memset(resp, 0, sizeof(*resp));
     resp->kind = MSG_RESPONSE;
     snprintf(resp->command, sizeof(resp->command), "%s", req->command);
+    snprintf(resp->sender_id, sizeof(resp->sender_id), "%d", fridge->base.info.id);
     resp->src_id = fridge->base.info.id;
     resp->dst_id = req->src_id;
     resp->src_pid = getpid();
