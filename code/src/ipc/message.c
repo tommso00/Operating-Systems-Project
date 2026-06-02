@@ -106,6 +106,9 @@ int ipc_send_message(const domo_message *msg){
 	//If the reader (target process) does not exist, open() will fail with ENXIO insted of blocking our process forever.
 	int fd_out = open(fifo_path, O_WRONLY | O_NONBLOCK);
 	if(fd_out< 0){
+		if (errno == ENXIO || errno == ENOENT) {
+			return ERR_DEVICE_NOT_FOUND;
+		}
 		return ERR_IPC_FAILURE;
 	}
 	
