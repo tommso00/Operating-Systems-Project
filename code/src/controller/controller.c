@@ -235,7 +235,7 @@ static int spawn_bulb_process(device_id id, pid_t *pid_out) {
               "--device-bulb",
               id_arg,
               (char *)NULL);
-	perror("execl lailed");
+	perror("execl failed");
         _exit(ERR_SYSTEM);
     }
 
