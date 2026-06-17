@@ -124,8 +124,8 @@ static int window_handle_message(device *dev, const domo_message *req, domo_mess
                 window->base.info.state = STATE_CLOSED;
                 
                 window->last_state_change = 0; 
-                window->open_switch_state = 1;
-                window->open_switch_state = 0;
+                window->close_switch_state = 1;
+                window->close_switch_state = 0;
             }
         }
 
