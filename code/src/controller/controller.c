@@ -341,7 +341,6 @@ static int controller_notify_parent_child_removed(const controller *controller,
 {
     const device *parent;
     domo_message msg;
-    int rc;
 
     if (controller == NULL) {
         return ERR_INVALID_PARAMETERS;
@@ -359,7 +358,7 @@ static int controller_notify_parent_child_removed(const controller *controller,
     memset(&msg, 0, sizeof(msg));
     msg.kind = MSG_REQUEST;
     snprintf(msg.sender_id, sizeof(msg.sender_id), "%d", CONTROLLER_ID);
-    snprintf(msg.command, sizeof(msg.command), "CHILD_REMOVED");
+    snprintf(msg.command, sizeof(msg.command), "%s", CMD_CHILD_REMOVED);
     msg.target_id = parent_id;
     msg.src_id = CONTROLLER_ID;
     msg.dst_id = parent_id;
@@ -367,12 +366,8 @@ static int controller_notify_parent_child_removed(const controller *controller,
     msg.request_id = (int)child_id;
     snprintf(msg.payload, sizeof(msg.payload), "%d", child_id);
 
-    rc = send_message_to_fifo(parent->info.fifo_path, &msg);
-    if (rc == ERR_DEVICE_NOT_FOUND || rc == ERR_IPC_FAILURE) {
-        return OK;
-    }
-
-    return rc;
+    (void)send_message_to_fifo(parent->info.fifo_path, &msg);
+    return OK;
 }
 
 static int controller_delete_children_cascade(controller *ctrl, device_id parent_id)
@@ -1208,7 +1203,7 @@ int controller_link_devices(controller *controller, device_id child_id, device_i
 
     parent_msg.kind = MSG_REQUEST;
     snprintf(parent_msg.sender_id, sizeof(parent_msg.sender_id), "%d", CONTROLLER_ID);
-    snprintf(parent_msg.command, sizeof(parent_msg.command), "CHILD_ADDED");
+    snprintf(parent_msg.command, sizeof(parent_msg.command), "%s", CMD_CHILD_ADDED);
     parent_msg.src_id = CONTROLLER_ID;
     parent_msg.dst_id = parent_id;
     parent_msg.target_id = parent_id;

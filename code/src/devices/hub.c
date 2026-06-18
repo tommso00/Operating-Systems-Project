@@ -64,6 +64,7 @@ static int hub_add_child_local(hub_device *hub, device_id child_id)
     }
 
     hub->children[hub->child_count++] = child_id;
+    hub->base.child_count = (size_t)hub->child_count;
     return OK;
 }
 
@@ -79,6 +80,7 @@ static int hub_remove_child_local(hub_device *hub, device_id child_id)
         if (hub->children[i] == child_id) {
             hub->children[i] = hub->children[hub->child_count - 1];
             hub->child_count--;
+            hub->base.child_count = (size_t)hub->child_count;
             return OK;
         }
     }
@@ -149,6 +151,7 @@ static int hub_load_children(hub_device *hub)
         }
 
         hub->child_count = (int)n;
+        hub->base.child_count = (size_t)hub->child_count;
         return OK;
     }
 
@@ -165,6 +168,7 @@ static int hub_load_children(hub_device *hub)
     }
 
     hub->child_count = count;
+    hub->base.child_count = (size_t)hub->child_count;
     return OK;
 }
 
@@ -606,8 +610,13 @@ static int hub_init(device *dev)
     hub->child_count = 0;
     hub->manual_override = false;
     hub->next_request_id = 1;
+
     hub->base.info.state = STATE_OFF;
     hub->base.info.manual_override = false;
+
+    hub->base.child_ids = hub->children;
+    hub->base.child_capacity = MAX_DEVICES;
+    hub->base.child_count = 0;
 
     return OK;
 }

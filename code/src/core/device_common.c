@@ -48,6 +48,24 @@ static bool device_is_del_command(const domo_message *req) {
     return req != NULL && strcmp(req->command, CMD_DEL) == 0;
 }
 
+static int device_message_requires_reply(const domo_message *req)
+{
+    if (req == NULL) {
+        return 0;
+    }
+
+    if (strcmp(req->command, CMD_CHILD_REMOVED) == 0) {
+        return 0;
+    }
+
+    return 1;
+}
+
+static bool device_is_child_removed_command(const domo_message *req)
+{
+    return req != NULL && strcmp(req->command, CMD_CHILD_REMOVED) == 0;
+}
+
 static void device_handle_child_removed(device *dev, const domo_message *req)
 {
     device_id removed_id;
@@ -56,11 +74,11 @@ static void device_handle_child_removed(device *dev, const domo_message *req)
         return;
     }
 
-    if (strncmp(req->payload, "child_removed,", 14) != 0) {
+    if (!device_is_child_removed_command(req)) {
         return;
     }
 
-    removed_id = (device_id)atoi(req->payload + 14);
+    removed_id = (device_id)atoi(req->payload);
 
     for (size_t i = 0; i < dev->child_count; ++i) {
         if (dev->child_ids[i] == removed_id) {
@@ -140,7 +158,8 @@ int device_common_open_fifo(device *dev, int *fd_out, int *dummy_fd_out) {
     return OK;
 }
 
-int device_common_main_loop(device *dev, int fd) {
+int device_common_main_loop(device *dev, int fd)
+{
     int rc;
 
     if (dev == NULL) {
@@ -178,6 +197,10 @@ int device_common_main_loop(device *dev, int fd) {
             for (;;) {
                 domo_message req;
                 domo_message resp;
+                int needs_reply;
+
+                memset(&req, 0, sizeof(req));
+                memset(&resp, 0, sizeof(resp));
 
                 rc = ipc_recv_message(fd, &req);
                 if (rc != OK) {
@@ -209,13 +232,6 @@ int device_common_main_loop(device *dev, int fd) {
                     break;
                 }
 
-                if (strcmp(req.command, CMD_STATUS) == 0) {
-                    device_handle_child_removed(dev, &req);
-                    if (strncmp(req.payload, "child_removed,", 14) == 0) {
-                        continue;
-                    }
-                }
-
                 if (strcmp(req.command, CMD_SWITCH) == 0 &&
                     req.arg1[0] == '\0' &&
                     req.payload[0] != '\0') {
@@ -229,29 +245,39 @@ int device_common_main_loop(device *dev, int fd) {
                     }
                 }
 
-                if (dev->handle_message != NULL) {
-                    rc = dev->handle_message(dev, &req, &resp);
-                    if (rc != OK) {
-                        continue;
-                    }
+                device_handle_child_removed(dev, &req);
 
-                    {
-                        char reply_fifo[PATH_MAX];
-                        rc = make_reply_fifo_path(req.src_pid,
-                                                  req.request_id,
-                                                  reply_fifo,
-                                                  sizeof(reply_fifo));
-                        if (rc == OK) {
-                            rc = send_message_to_fifo(reply_fifo, &resp);
-                            if (rc != OK) {
-                                fprintf(stderr,
-                                        "[device %d] failed reply cmd=%s req=%d rc=%d\n",
-                                        dev->info.id,
-                                        req.command,
-                                        req.request_id,
-                                        rc);
-                                fflush(stderr);
-                            }
+                if (dev->handle_message == NULL) {
+                    continue;
+                }
+
+                rc = dev->handle_message(dev, &req, &resp);
+                if (rc != OK) {
+                    continue;
+                }
+
+                needs_reply = device_message_requires_reply(&req);
+                if (!needs_reply) {
+                    continue;
+                }
+
+                {
+                    char reply_fifo[PATH_MAX];
+
+                    rc = make_reply_fifo_path(req.src_pid,
+                                              req.request_id,
+                                              reply_fifo,
+                                              sizeof(reply_fifo));
+                    if (rc == OK) {
+                        rc = send_message_to_fifo(reply_fifo, &resp);
+                        if (rc != OK) {
+                            fprintf(stderr,
+                                    "[device %d] failed reply cmd=%s req=%d rc=%d\n",
+                                    dev->info.id,
+                                    req.command,
+                                    req.request_id,
+                                    rc);
+                            fflush(stderr);
                         }
                     }
                 }
