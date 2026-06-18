@@ -203,6 +203,7 @@ int device_common_main_loop(device *dev, int fd) {
             }
 
             if (device_is_del_command(&req)) {
+                simulate_random_delay();
                 device_keep_running = 0;
                 break;
             }

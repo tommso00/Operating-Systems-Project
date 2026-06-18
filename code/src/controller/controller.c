@@ -19,6 +19,7 @@
 #include "routing.h"
 #include "event_loop.h"
 #include "device.h"
+#include "cleanup.h"
 
 static int ensure_runtime_dirs(void) {
     if (mkdir(RUNTIME_DIR, 0777) != 0 && errno != EEXIST) return ERR_SYSTEM;
@@ -74,8 +75,7 @@ static void controller_add_rollback(device_id id, pid_t pid, int routing_added) 
     char fifo_path[PATH_MAX];
 
     if (pid > 0) {
-        kill(pid, SIGTERM);
-        waitpid(pid, NULL, 0);
+        waitpid(pid, NULL, WNOHANG);
     }
 
     if (routing_added) {
@@ -332,43 +332,7 @@ static int controller_wait_device_exit(pid_t pid, int *status_out)
         }
     }
 
-    if (kill(pid, SIGTERM) != 0 && errno != ESRCH) {
-        return ERR_SYSTEM;
-    }
-
-    for (int i = 0; i < 3; i++) {
-        pid_t w = waitpid(pid, &status, WNOHANG);
-
-        if (w == pid) {
-            *status_out = status;
-            return OK;
-        }
-
-        if (w < 0) {
-            if (errno == ECHILD) {
-                *status_out = 0;
-                return OK;
-            }
-            return ERR_SYSTEM;
-        }
-
-        sleep(1);
-    }
-
-    if (kill(pid, SIGKILL) != 0 && errno != ESRCH) {
-        return ERR_SYSTEM;
-    }
-
-    if (waitpid(pid, &status, 0) < 0) {
-        if (errno == ECHILD) {
-            *status_out = 0;
-            return OK;
-        }
-        return ERR_SYSTEM;
-    }
-
-    *status_out = status;
-    return OK;
+    return ERR_TIMEOUT;
 }
 
 static int controller_notify_parent_child_removed(const controller *controller,
@@ -411,21 +375,33 @@ static int controller_notify_parent_child_removed(const controller *controller,
     return rc;
 }
 
-static int controller_delete_children_cascade(controller *controller, device_id parent_id)
+static int controller_delete_children_cascade(controller *ctrl, device_id parent_id)
 {
     device_id children[CONTROLLER_MAX_DEVICES];
     int count = 0;
     int rc;
     int i;
 
+    if (ctrl == NULL) {
+        return ERR_INVALID_PARAMETERS;
+    }
+
     rc = routing_collect_children(parent_id, children, CONTROLLER_MAX_DEVICES, &count);
     if (rc != OK) {
         return rc;
     }
 
-    for (i = 0; i < count; i++) {
-        rc = controller_delete_device(controller, children[i]);
-        if (rc != OK) {
+    for (i = 0; i < count; ++i) {
+        const device *child = controller_find_device_const(ctrl, children[i]);
+
+        if (child == NULL) {
+            continue;
+        }
+
+        rc = controller_send_del_message(child);
+        if (rc != OK &&
+            rc != ERR_DEVICE_NOT_FOUND &&
+            rc != ERR_IPC_FAILURE) {
             return rc;
         }
     }
@@ -637,6 +613,74 @@ static void controller_clear_pending(pending_request *req)
     req->reply_fd = -1;
 }
 
+static int controller_collect_subtree(controller *ctrl,
+                                      device_id root_id,
+                                      device_id *ids,
+                                      int max_ids,
+                                      int *count_out)
+{
+    device_id children[CONTROLLER_MAX_DEVICES];
+    int child_count = 0;
+    int rc;
+    int i;
+    int total = 0;
+
+    if (ctrl == NULL || ids == NULL || count_out == NULL || max_ids <= 0) {
+        return ERR_INVALID_PARAMETERS;
+    }
+
+    ids[total++] = root_id;
+
+    rc = routing_collect_children(root_id, children, CONTROLLER_MAX_DEVICES, &child_count);
+    if (rc != OK) {
+        return rc;
+    }
+
+    for (i = 0; i < child_count; ++i) {
+        if (total >= max_ids) {
+            return ERR_NOT_ALLOWED;
+        }
+        ids[total++] = children[i];
+    }
+
+    *count_out = total;
+    return OK;
+}
+
+static int controller_wait_subtree_removed(controller *ctrl,
+                                           const device_id *ids,
+                                           int count)
+{
+    int waited = 0;
+
+    if (ctrl == NULL || ids == NULL || count < 0) {
+        return ERR_INVALID_PARAMETERS;
+    }
+
+    while (waited < TIMEOUT_DEVICE + MAX_RANDOM_DELAY_S + 2) {
+        int all_gone = 1;
+        int i;
+
+        cleanup_reap_terminated_children(ctrl);
+
+        for (i = 0; i < count; ++i) {
+            if (controller_find_device_index_by_id(ctrl, ids[i]) >= 0) {
+                all_gone = 0;
+                break;
+            }
+        }
+
+        if (all_gone) {
+            return OK;
+        }
+
+        sleep(1);
+        waited++;
+    }
+
+    return ERR_TIMEOUT;
+}
+
 int controller_init(controller *controller)
 {
     if (controller == NULL) {
@@ -766,6 +810,8 @@ int controller_delete_device(controller *ctrl, device_id id)
     pid_t pid;
     int status = 0;
     int rc;
+    device_id subtree_ids[CONTROLLER_MAX_DEVICES];
+    int subtree_count = 0;
 
     if (ctrl == NULL) {
         return ERR_INVALID_PARAMETERS;
@@ -774,6 +820,14 @@ int controller_delete_device(controller *ctrl, device_id id)
     dev = controller_find_device(ctrl, id);
     if (dev == NULL) {
         return ERR_DEVICE_NOT_FOUND;
+    }
+
+    rc = controller_collect_subtree(ctrl, id,
+                                    subtree_ids,
+                                    CONTROLLER_MAX_DEVICES,
+                                    &subtree_count);
+    if (rc != OK) {
+        return rc;
     }
 
     if (is_control_device(dev->info.type)) {
@@ -787,9 +841,7 @@ int controller_delete_device(controller *ctrl, device_id id)
 
     rc = controller_send_del_message(dev);
     if (rc != OK) {
-        if (kill(pid, SIGTERM) != 0 && errno != ESRCH) {
-            return ERR_SYSTEM;
-        }
+        return rc;
     }
 
     rc = controller_wait_device_exit(pid, &status);
@@ -802,6 +854,11 @@ int controller_delete_device(controller *ctrl, device_id id)
         if (rc != OK && rc != ERR_DEVICE_NOT_FOUND) {
             return rc;
         }
+    }
+
+    rc = controller_wait_subtree_removed(ctrl, subtree_ids, subtree_count);
+    if (rc != OK) {
+        return rc;
     }
 
     printf("Deleted device: id=%d\n", id);
