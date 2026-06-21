@@ -199,6 +199,43 @@ Cosa stampa: ID, PID, segnale di terminazione, tipo di dispositivo
         //         parent_id, dead_id);
     }
 
+
+    // addoption of orphan childs
+    for (int i=0; i<ctrl->device_count; i++){
+        if (ctrl->devices[i].info.logical_parent_id == dead_id){
+
+            ctrl->devices[i].info.logical_parent_id = CONTROLLER_ID;
+
+            routing_link_devices(ctrl->devices[i].info.id, CONTROLLER_ID);
+
+            domo_message adopt_msg;
+            memset(&adopt_msg, 0, sizeof(adopt_msg));
+            adopt_msg.kind = MSG_REQUEST;
+            snprintf(adopt_msg.sender_id, sizeof(adopt_msg.sender_id), "%d", CONTROLLER_ID);
+            snprintf(adopt_msg.command, sizeof(adopt_msg.command), "%s", CMD_LINK);
+            adopt_msg.src_id = CONTROLLER_ID;
+            adopt_msg.dst_id = ctrl->devices[i].info.id;
+            adopt_msg.target_id = ctrl->devices[i].info.id;
+            adopt_msg.src_pid =getpid();
+            adopt_msg.request_id = ctrl->devices[i].info.id;
+            snprintf(adopt_msg.payload, sizeof(adopt_msg.payload), "parent,%d", CONTROLLER_ID);
+            
+            send_message_to_fifo(ctrl->devices[i].info.fifo_path, &adopt_msg);
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
     rc = routing_remove_node(dead_id);
     if (rc != OK && rc != ERR_DEVICE_NOT_FOUND) {
         // Debug log - commented out
