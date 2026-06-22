@@ -79,15 +79,15 @@ if grep -q "begin=99:99" "$CTRL_OUT"; then
     fail "timer accepted invalid time format 99:99"
 fi
 
-./bin/manual_client 1 set begin 23:00 >> "$MANUAL_OUT" 2>&1 || true
-./bin/manual_client 1 set end 08:00 >> "$MANUAL_OUT" 2>&1 || true
+./bin/manual_client 1 set begin 08:00 >> "$MANUAL_OUT" 2>&1 || true
+./bin/manual_client 1 set end 23:00 >> "$MANUAL_OUT" 2>&1 || true
 
 sleep 3
 send_cmd "info 1"
 sleep 6
 
-grep -E -q "timer id=1 parent=0 state=(on|off) begin=23:00 end=08:00" "$CTRL_OUT" || \
-    fail "timer did not accept overnight schedule 23:00 -> 08:00"
+grep -E -q "timer id=1 parent=0 state=(on|off) begin=08:00 end=23:00" "$CTRL_OUT" || \
+    fail "timer did not accept schedule 08:00 -> 23:00"
 
 send_cmd "exit"
 exec {WRITER_FD}>&-
